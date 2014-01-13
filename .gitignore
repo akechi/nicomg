@@ -1,4 +1,5 @@
 *.yml
 ./archives/*.zip
 ./archives/*.tar.gz
-./caches/**/*.jpg
+./caches/**/**/*.jpg
+./caches/**/**/*.png
