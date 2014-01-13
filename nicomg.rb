@@ -1,5 +1,5 @@
-require 'mechanize'
-require 'rexml/document'
+require 'bundler'
+Bundler.require
 
 agent = Mechanize.new
 config = YAML.load_file 'config.yml'
