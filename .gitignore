@@ -1,1 +1,4 @@
 *.yml
+./archives/*.zip
+./archives/*.tar.gz
+./caches/**/*.jpg
