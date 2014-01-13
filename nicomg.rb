@@ -1,15 +1,30 @@
 require 'bundler'
 Bundler.require
 
-agent = Mechanize.new
+# config
 config = YAML.load_file 'config.yml'
+login_url = 'https://secure.nicovideo.jp/secure/login?site=niconico'
+
+# agent initialize, connect
+agent = Mechanize.new
 agent.ssl_version = 'SSLv3'
-secure_url = 'https://secure.nicovideo.jp/secure/login?site=niconico'
-rss = agent.get("http://seiga.nicovideo.jp/rss/manga/#{ARGV[0]}")
-html = REXML::Document.new rss.body
-items = html.elements.each('rss/channel/item/link') do |e| e.text end
-urls = items.map{|i|i.text}.sort
-agent.post(secure_url, 'mail' => config['account']['email'], 'password' => config['account']['passwd'])
+agent.post(login_url, 'mail' => config['account']['email'], 'password' => config['account']['passwd'])
+
+# get story list
+title_id = ARGV[0] || 3770
+stories_rss = agent.get("http://seiga.nicovideo.jp/rss/manga/#{title_id}")
+xml = Nokogiri::XML stories_rss.body
+stories = xml.xpath('rss/channel/item').map{|item|
+  url = item.at('link').content
+  {
+    title: item.at('title').content,
+    url: url,
+    id: url.match(/mg(\d+)$/)[1]
+  }
+}
+
+puts "Found #{stories.size} stories."
+
 urls.map{|e|
   next unless /(mg(\d+))$/ =~ e
   mg = $1
