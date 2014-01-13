@@ -1,4 +1,5 @@
 *.yml
+archives/
 archives/*.zip
 archives/*.tar.gz
 caches/
