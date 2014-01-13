@@ -1,6 +1,6 @@
 *.yml
 ./archives/*.zip
 ./archives/*.tar.gz
-./caches/*/
+./caches/
 ./caches/**/**/*.jpg
 ./caches/**/**/*.png
