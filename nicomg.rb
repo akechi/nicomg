@@ -14,6 +14,13 @@ agent.post(login_url, 'mail' => config['account']['email'], 'password' => config
 title_id = ARGV[0] || 3770
 stories_rss = agent.get("http://seiga.nicovideo.jp/rss/manga/#{title_id}")
 xml = Nokogiri::XML stories_rss.body
+
+# Create Manga title dir
+title = xml.at('rss/channel/title').content.sub(' - ニコニコ静画（マンガ）', '')
+title_path = "./caches/#{title}"
+FileUtils.mkdir_p title_path unless FileTest.exists? title_path
+
+# Get all stories
 stories = xml.xpath('rss/channel/item').map{|item|
   url = item.at('link').content
   {
@@ -21,18 +28,31 @@ stories = xml.xpath('rss/channel/item').map{|item|
     url: url,
     id: url.match(/mg(\d+)$/)[1]
   }
-}
+}.reverse
 
 puts "Found #{stories.size} stories."
 
-urls.map{|e|
-  next unless /(mg(\d+))$/ =~ e
-  mg = $1
-  mg_num = $2
-  FileUtils.mkdir_p(mg) unless FileTest.exist?(mg)
-  manga = agent.get("http://seiga.nicovideo.jp/api/theme/data?theme_id=#{mg_num}")
-  html = REXML::Document.new manga.body
-  images = html.elements.each('response/image_list/image/source_url') do |e| e.text end
-  images_url = images.map{|i|i.text.sub('l?','p?')}.sort
-  images_url.each_with_index do |item,i| agent.get(item).save_as("./#{mg.to_s}/#{i+1}.jpg") end
-}
+stories.each do |story, i|
+  puts "\nFetch #{story[:title]}"
+
+  story_path = "#{title_path}/#{story[:title]}"
+  FileUtils.mkdir_p story_path unless FileTest.exists? story_path
+
+  xml = Nokogiri::XML agent.get("http://seiga.nicovideo.jp/api/theme/data?theme_id=#{story[:id]}").body
+  pages = xml.xpath('response/image_list/image/source_url').map{|url|
+    {
+      url: url.content.sub(/l\?\d*$/, 'p?'),
+      id: url.content.match(/(\d+)l\?\d*$/)[1]
+    }
+  }
+
+  # Fetch pages
+  pages.each.with_progress('Fetch pages') do |page|
+    page_path = "#{story_path}/#{page[:id]}.jpg"
+    unless File.exists? page_path
+      agent.get(page[:url]).save_as page_path
+    end
+  end
+end
+
+# TODO:zip them
