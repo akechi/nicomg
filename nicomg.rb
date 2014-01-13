@@ -12,10 +12,12 @@ urls = items.map{|i|i.text}.sort
 agent.post(secure_url, 'mail' => config['account']['email'], 'password' => config['account']['passwd'])
 urls.map{|e|
   next unless /(mg(\d+))$/ =~ e
-  FileUtils.mkdir_p($1.to_s) unless FileTest.exist?($1.to_s)
-  manga = agent.get("http://seiga.nicovideo.jp/api/theme/data?theme_id=#{$2}")
+  mg = $1
+  mg_num = $2
+  FileUtils.mkdir_p(mg) unless FileTest.exist?(mg)
+  manga = agent.get("http://seiga.nicovideo.jp/api/theme/data?theme_id=#{mg_num}")
   html = REXML::Document.new manga.body
   images = html.elements['response/image_list/image/source_url']
   images_url = images.map{|i|i.text.sub('l?','p?')}.sort
-  images_url.each_with_index do |item,i| agent.get(item).save_as("./#{$1.to_s}/#{i+1}.jpg") end
+  images_url.each_with_index do |item,i| agent.get(item).save_as("./#{mg.to_s}/#{i+1}.jpg") end
 }
