@@ -1,1 +1,3 @@
-hi
+account:
+  email: test
+  passwd: test
