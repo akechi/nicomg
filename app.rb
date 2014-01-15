@@ -17,8 +17,10 @@ xml = Nokogiri::XML stories_rss.body
 
 # Create Manga title dir
 title = xml.at('rss/channel/title').content.sub(' - ニコニコ静画（マンガ）', '')
-title_path = "./caches/#{title_id}_#{title}"
-FileUtils.mkdir_p title_path unless FileTest.exists? title_path
+cache_title_path = "./caches/#{title}"
+archive_title_path = "./archives/#{title}"
+FileUtils.mkdir_p cache_title_path unless FileTest.exists? cache_title_path
+FileUtils.mkdir_p archive_title_path unless FileTest.exists? archive_title_path
 
 # Get all stories
 stories = xml.xpath('rss/channel/item').map{|item|
@@ -35,7 +37,7 @@ puts "Found #{stories.size} stories."
 stories.each do |story, i|
   puts "\nFetch #{story[:title]}"
 
-  story_path = "#{title_path}/#{story[:title]}"
+  story_path = "#{cache_title_path}/#{story[:title]}"
   FileUtils.mkdir_p story_path unless FileTest.exists? story_path
 
   xml = Nokogiri::XML agent.get("http://seiga.nicovideo.jp/api/theme/data?theme_id=#{story[:id]}").body
@@ -47,10 +49,14 @@ stories.each do |story, i|
   }
 
   # Fetch pages
-  pages.each.with_progress('Fetch pages') do |page|
-    page_path = "#{story_path}/#{page[:id]}.jpg"
-    unless File.exists? page_path
-      agent.get(page[:url]).save_as page_path
+  Zip::File.open("#{archive_title_path}/#{story[:title]}.zip", Zip::File::CREATE) do |zip|
+    zip.dir.mkdir(story[:title])
+    pages.each.with_progress('Fetch pages') do |page|
+      page_path = "#{story_path}/#{page[:id]}.jpg"
+      unless File.exists? page_path
+        agent.get(page[:url]).save_as page_path
+      end
+      zip.file.open("#{story[:title]}/#{File.basename(page_path)}", "w"){|f| f.puts open(page_path).read}
     end
   end
 end
