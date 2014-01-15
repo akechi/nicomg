@@ -17,7 +17,7 @@ xml = Nokogiri::XML stories_rss.body
 
 # Create Manga title dir
 title = xml.at('rss/channel/title').content.sub(' - ニコニコ静画（マンガ）', '')
-title_path = "./caches/#{title}"
+title_path = "./caches/#{title_id}_#{title}"
 FileUtils.mkdir_p title_path unless FileTest.exists? title_path
 
 # Get all stories
